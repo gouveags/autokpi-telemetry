@@ -20,6 +20,7 @@ import argparse
 import pandas as pd
 import numpy as np
 
+
 def pct(series, threshold, op=">="):
     if len(series) == 0:
         return 0.0
@@ -34,24 +35,37 @@ def pct(series, threshold, op=">="):
     else:
         raise ValueError("Invalid op")
 
+
 def count_gear_changes(gears):
     if len(gears) <= 1:
         return 0
     # count transitions
     return (gears.values[1:] != gears.values[:-1]).sum()
 
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--input", required=True, help="Input telemetry CSV")
     ap.add_argument("--output", required=True, help="Output per-lap KPIs CSV")
-    ap.add_argument("--lateral_g_threshold", type=float, default=1.8, help="Exceedance threshold for lateral g")
-    ap.add_argument("--overspeed_threshold", type=float, default=65.0, help="Overspeed threshold (m/s)")
+    ap.add_argument(
+        "--lateral_g_threshold",
+        type=float,
+        default=1.8,
+        help="Exceedance threshold for lateral g",
+    )
+    ap.add_argument(
+        "--overspeed_threshold",
+        type=float,
+        default=65.0,
+        help="Overspeed threshold (m/s)",
+    )
     args = ap.parse_args()
 
-    df = pd.read_csv(args.input, parse_dates=["timestamp"])
+    df = pd.read_csv(args.input)
+    df["timestamp"] = pd.to_datetime(df["timestamp"], format="ISO8601")
 
     kpi_rows = []
-    for (lap_id, setup), g in df.groupby(["lap_id", "setup"], sort=True):
+    for (lap_id, setup), g in df.groupby(["lap_id", "setup"], sort=True):  # type: ignore
         lap_time = (g["timestamp"].max() - g["timestamp"].min()).total_seconds()
         mean_speed = g["speed_mps"].mean()
         p95_speed = g["speed_mps"].quantile(0.95)
@@ -62,23 +76,26 @@ def main():
         overspeed_events = (g["speed_mps"] > args.overspeed_threshold).sum()
         lat_g_exceed = (g["lateral_g"] > args.lateral_g_threshold).sum()
 
-        kpi_rows.append({
-            "lap_id": lap_id,
-            "setup": setup,
-            "lap_time_s": round(lap_time, 2),
-            "mean_speed_mps": round(mean_speed, 3),
-            "p95_speed_mps": round(p95_speed, 3),
-            "throttle_duty_pct": round(100*throttle_duty, 1),
-            "brake_duty_pct": round(100*brake_duty, 1),
-            "max_lateral_g": round(max_lateral_g, 3),
-            "gear_changes": int(gear_changes),
-            "overspeed_events": int(overspeed_events),
-            "lateral_g_exceed_count": int(lat_g_exceed)
-        })
+        kpi_rows.append(
+            {
+                "lap_id": lap_id,
+                "setup": setup,
+                "lap_time_s": round(float(lap_time), 2),
+                "mean_speed_mps": round(float(mean_speed), 3),
+                "p95_speed_mps": round(float(p95_speed), 3),
+                "throttle_duty_pct": round(100 * float(throttle_duty), 1),
+                "brake_duty_pct": round(100 * float(brake_duty), 1),
+                "max_lateral_g": round(float(max_lateral_g), 3),
+                "gear_changes": int(gear_changes),
+                "overspeed_events": int(overspeed_events),
+                "lateral_g_exceed_count": int(lat_g_exceed),
+            }
+        )
 
-    out = pd.DataFrame(kpi_rows).sort_values(["setup","lap_id"])
+    out = pd.DataFrame(kpi_rows).sort_values(["setup", "lap_id"])
     out.to_csv(args.output, index=False)
     print(f"Wrote KPIs to {args.output}")
+
 
 if __name__ == "__main__":
     main()
