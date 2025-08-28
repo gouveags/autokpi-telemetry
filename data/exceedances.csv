@@ -1,0 +1,9 @@
+lap_id,setup,channel,op,threshold,count
+1,A,lateral_g,>,1.8,9
+2,A,lateral_g,>,1.8,11
+3,A,lateral_g,>,1.8,12
+4,A,lateral_g,>,1.8,13
+5,B,lateral_g,>,1.8,11
+6,B,lateral_g,>,1.8,11
+7,B,lateral_g,>,1.8,13
+8,B,lateral_g,>,1.8,17

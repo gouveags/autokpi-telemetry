@@ -1,0 +1,7 @@
+OLS Regression: lap_time_s ~ mean_speed_mps + throttle_duty_pct + brake_duty_pct
+
+Intercept: 42.5064
+mean_speed_mps coef: -0.1506
+throttle_duty (0-1) coef: 55.7398
+brake_duty (0-1) coef: 19.5032
+R^2: 0.4573
